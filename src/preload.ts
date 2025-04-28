@@ -1,5 +1,5 @@
-import { contextBridge } from "electron";
+import { contextBridge } from 'electron';
 
-contextBridge.exposeInMainWorld("electronAPI", {
-    // We'll expand this later for filesystem access, settings, etc.
+contextBridge.exposeInMainWorld('electronAPI', {
+  // APIs will be added here later
 });

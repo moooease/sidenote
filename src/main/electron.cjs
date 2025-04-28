@@ -1,24 +1,28 @@
-import { app, BrowserWindow } from "electron";
-import * as path from "path";
+const { app, BrowserWindow } = require("electron");
+const path = require("path");
 
-let mainWindow: BrowserWindow | null = null;
+let mainWindow = null;
 
 const createWindow = () => {
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
         webPreferences: {
-            preload: path.join(__dirname, "../preload.js"),
+            preload: path.join(__dirname, "../../preload.js"),
             contextIsolation: true,
             nodeIntegration: false,
         },
     });
 
-    if (process.env.NODE_ENV === "development") {
+    if (!app.isPackaged) {
+        // Development: Load Vite dev server
         mainWindow.loadURL("http://localhost:5173");
         mainWindow.webContents.openDevTools();
     } else {
-        mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
+        // Production: Load built index.html
+        mainWindow.loadFile(
+            path.join(__dirname, "../../dist/renderer/index.html")
+        );
     }
 
     mainWindow.on("closed", () => {
@@ -29,9 +33,7 @@ const createWindow = () => {
 app.whenReady().then(createWindow);
 
 app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") {
-        app.quit();
-    }
+    if (process.platform !== "darwin") app.quit();
 });
 
 app.on("activate", () => {
