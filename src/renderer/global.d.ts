@@ -8,6 +8,8 @@ declare global {
             readFile: (filePath: string) => Promise<string>;
             saveFile: (filePath: string, content: string) => Promise<boolean>;
             getSavedRoot: () => Promise<string | null>;
+            createFolder: (targetPath: string, folderName: string) => Promise<void>;
+            createNote: (targetPath: string, fileName: string) => Promise<void>;
         };
     }
 }

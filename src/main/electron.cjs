@@ -89,6 +89,26 @@ ipcMain.handle('save-file', async (event, filePath, content) => {
     return true;
 });
 
+ipcMain.handle('create-folder', async (event, targetPath, folderName) => {
+    const newFolderPath = path.join(targetPath, folderName);
+    try {
+        await fsp.mkdir(newFolderPath, { recursive: true });
+    } catch (err) {
+        console.error('Failed to create folder:', err);
+        throw err;
+    }
+});
+
+ipcMain.handle('create-note', async (event, targetPath, fileName) => {
+    const newFilePath = path.join(targetPath, fileName);
+    try {
+        await fsp.writeFile(newFilePath, '', 'utf-8'); // Create empty note
+    } catch (err) {
+        console.error('Failed to create note:', err);
+        throw err;
+    }
+});
+
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
