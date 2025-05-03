@@ -1,30 +1,28 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { ipcMain, dialog } = require('electron');
-const fs = require('fs');
 const fsp = require('fs').promises;
+const { setConfig, getConfigValue } = require('./persistence');
 
 let mainWindow = null;
 
 const createWindow = () => {
-    console.log('Preload path:', path.join(__dirname, 'preload.js'));
+    const preloadPath = path.join(__dirname, 'preload.js');
+    console.log('Preload path:', preloadPath);
 
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
+            preload: preloadPath,
             contextIsolation: true,
             nodeIntegration: false
         }
     });
 
     if (!app.isPackaged) {
-        // Development: Load Vite dev server
         mainWindow.loadURL('http://localhost:5173');
         mainWindow.webContents.openDevTools();
     } else {
-        // Production: Load built index.html
         mainWindow.loadFile(path.join(__dirname, '../../dist/renderer/index.html'));
     }
 
@@ -40,12 +38,17 @@ ipcMain.handle('select-root-folder', async () => {
         properties: ['openDirectory', 'createDirectory']
     });
 
-    if (result.canceled) {
-        return null;
-    } else {
-        const folderPath = result.filePaths[0];
-        return folderPath;
+    if (!result.canceled && result.filePaths.length > 0) {
+        const selected = result.filePaths[0];
+        setConfig('rootPath', selected);
+        return selected;
     }
+
+    return null;
+});
+
+ipcMain.handle('get-saved-root', async () => {
+    return getConfigValue('rootPath');
 });
 
 ipcMain.handle('read-folder-structure', async (event, rootPath) => {
@@ -68,7 +71,7 @@ ipcMain.handle('read-folder-structure', async (event, rootPath) => {
                         path: fullPath
                     };
                 } else {
-                    return null; // ignore non-markdown files
+                    return null;
                 }
             })
         ).then((results) => results.filter(Boolean));
@@ -78,8 +81,7 @@ ipcMain.handle('read-folder-structure', async (event, rootPath) => {
 });
 
 ipcMain.handle('read-file', async (event, filePath) => {
-    const content = await fsp.readFile(filePath, 'utf-8');
-    return content;
+    return await fsp.readFile(filePath, 'utf-8');
 });
 
 ipcMain.handle('save-file', async (event, filePath, content) => {

@@ -1,23 +1,33 @@
+import debounce from 'lodash/debounce';
 import React, { useState } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import Sidebar from './components/Sidebar';
 
 function App() {
-    const [currentNoteContent, setCurrentNoteContent] = useState<string | null>(null);
     const [currentNoteName, setCurrentNoteName] = useState<string | null>(null);
+    const [currentNotePath, setCurrentNotePath] = useState<string | null>(null);
     const [editedContent, setEditedContent] = useState<string>('');
 
     async function handleOpenFile(filePath: string, fileName: string) {
         try {
             const content = await window.electronAPI.readFile(filePath);
-            setCurrentNoteContent(content);
             setEditedContent(content);
             setCurrentNoteName(fileName);
+            setCurrentNotePath(filePath); // Save path for autosave
         } catch (error) {
             console.error('Failed to read file:', error);
         }
     }
+
+    const debouncedSave = debounce(async (path: string, content: string) => {
+        try {
+            await window.electronAPI.saveFile(path, content);
+            console.log('Autosaved successfully.');
+        } catch (error) {
+            console.error('Autosave failed:', error);
+        }
+    }, 1000);
 
     return (
         <PanelGroup direction='horizontal' className='h-screen'>
@@ -39,7 +49,13 @@ function App() {
                             <textarea
                                 className='h-[calc(100vh-150px)] w-full resize-none rounded border bg-white p-2'
                                 value={editedContent}
-                                onChange={(e) => setEditedContent(e.target.value)}
+                                onChange={(e) => {
+                                    const newContent = e.target.value;
+                                    setEditedContent(newContent);
+                                    if (currentNotePath) {
+                                        debouncedSave(currentNotePath, newContent);
+                                    }
+                                }}
                                 placeholder='Start typing your notes...'
                             />
                         </>

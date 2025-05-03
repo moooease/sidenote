@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { FileNode } from '../types/FileNode';
 import FolderTree from './FolderTree';
@@ -10,6 +10,19 @@ interface SidebarProps {
 function Sidebar({ onFileSelect }: SidebarProps) {
     const [rootFolder, setRootFolder] = useState<string | null>(null);
     const [structure, setStructure] = useState<FileNode[]>([]);
+
+    useEffect(() => {
+        async function loadSavedRoot() {
+            const saved = await window.electronAPI.getSavedRoot();
+            if (saved) {
+                setRootFolder(saved);
+                const structure = await window.electronAPI.readFolderStructure(saved);
+                setStructure(structure);
+            }
+        }
+
+        loadSavedRoot();
+    }, []);
 
     const handleSelectFolder = async () => {
         console.log('Selecting folder...');
