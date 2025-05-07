@@ -10,6 +10,7 @@ declare global {
             getSavedRoot: () => Promise<string | null>;
             createFolder: (targetPath: string, folderName: string) => Promise<void>;
             createNote: (targetPath: string, fileName: string) => Promise<void>;
+            moveItem: (sourcePath: string, targetFolderPath: string) => Promise<void>;
         };
     }
 }

@@ -109,6 +109,18 @@ ipcMain.handle('create-note', async (event, targetPath, fileName) => {
     }
 });
 
+ipcMain.handle('move-item', async (event, sourcePath, targetFolderPath) => {
+    const itemName = path.basename(sourcePath);
+    const destinationPath = path.join(targetFolderPath, itemName);
+
+    try {
+        await fsp.rename(sourcePath, destinationPath);
+    } catch (err) {
+        console.error('Failed to move item:', err);
+        throw err;
+    }
+});
+
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });

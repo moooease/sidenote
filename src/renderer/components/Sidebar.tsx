@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 
-// works in Electron renderer
-
 import { FileNode } from '../types/FileNode';
 import FolderTree from './FolderTree';
 
@@ -12,14 +10,12 @@ interface SidebarProps {
 function Sidebar({ onFileSelect }: SidebarProps) {
     const [rootFolder, setRootFolder] = useState<string | null>(null);
     const [structure, setStructure] = useState<FileNode[]>([]);
-    const [selectedNode, setSelectedNode] = useState<FileNode | null>(null);
     const [creatingItem, setCreatingItem] = useState<null | { type: 'folder' | 'note' }>(null);
     const [newItemName, setNewItemName] = useState('');
 
     useEffect(() => {
         async function loadSavedRoot() {
             const saved = await window.electronAPI.getSavedRoot();
-
             if (saved) {
                 try {
                     const structure = await window.electronAPI.readFolderStructure(saved);
@@ -28,9 +24,7 @@ function Sidebar({ onFileSelect }: SidebarProps) {
                 } catch (err: any) {
                     console.warn('Saved root folder no longer exists:', saved);
                     console.warn(err);
-
                     alert('The previously selected root folder could not be found. Please select a new one.');
-
                     setRootFolder(null);
                     setStructure([]);
                 }
@@ -41,9 +35,7 @@ function Sidebar({ onFileSelect }: SidebarProps) {
     }, []);
 
     const handleSelectFolder = async () => {
-        console.log('Selecting folder...');
         const selectedFolder = await window.electronAPI.selectRootFolder();
-
         if (selectedFolder) {
             setRootFolder(selectedFolder);
             const folderStructure = await window.electronAPI.readFolderStructure(selectedFolder);
@@ -76,37 +68,50 @@ function Sidebar({ onFileSelect }: SidebarProps) {
     return (
         <div className='p-4'>
             <h2 className='mb-4 text-lg font-semibold'>Explorer</h2>
+
             <button className='mb-4 w-full rounded bg-blue-500 p-2 text-white hover:bg-blue-600' onClick={handleSelectFolder}>
                 Select Root Folder
             </button>
+
             {rootFolder && (
-                <div className='flex gap-2 border-b p-2'>
-                    <button
-                        className='rounded bg-gray-200 px-2 py-1 text-sm hover:bg-gray-300'
-                        onClick={() => {
-                            setCreatingItem({ type: 'folder' });
-                            setNewItemName('');
-                        }}
-                    >
-                        ➕ New Folder
-                    </button>
-                    <button
-                        className='rounded bg-gray-200 px-2 py-1 text-sm hover:bg-gray-300'
-                        onClick={() => {
-                            setCreatingItem({ type: 'note' });
-                            setNewItemName('');
-                        }}
-                    >
-                        📝 New Note
-                    </button>
-                </div>
+                <>
+                    <div className='flex gap-2 border-b p-2'>
+                        <button
+                            className='rounded bg-gray-200 px-2 py-1 text-sm hover:bg-gray-300'
+                            onClick={() => {
+                                setCreatingItem({ type: 'folder' });
+                                setNewItemName('');
+                            }}
+                        >
+                            ➕ New Folder
+                        </button>
+                        <button
+                            className='rounded bg-gray-200 px-2 py-1 text-sm hover:bg-gray-300'
+                            onClick={() => {
+                                setCreatingItem({ type: 'note' });
+                                setNewItemName('');
+                            }}
+                        >
+                            📝 New Note
+                        </button>
+                    </div>
+
+                    <div className='mb-2 text-sm text-gray-600'>{rootFolder}</div>
+
+                    {structure.length > 0 && (
+                        <FolderTree
+                            structure={structure}
+                            onFileSelect={onFileSelect}
+                            rootPath={rootFolder}
+                            updateStructure={async () => {
+                                const updated = await window.electronAPI.readFolderStructure(rootFolder);
+                                setStructure(updated);
+                            }}
+                        />
+                    )}
+                </>
             )}
 
-            {rootFolder && <div className='mb-2 text-sm text-gray-600'>{rootFolder}</div>}
-
-            <div>
-                {structure.length > 0 && <FolderTree structure={structure} onFileSelect={onFileSelect} onSelect={(node) => setSelectedNode(node)} />}
-            </div>
             {creatingItem && (
                 <input
                     className='my-2 w-full rounded border px-2 py-1 text-sm'

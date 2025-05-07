@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveFile: (filePath, content) => ipcRenderer.invoke('save-file', filePath, content),
     getSavedRoot: () => ipcRenderer.invoke('get-saved-root'),
     createFolder: (targetPath, folderName) => ipcRenderer.invoke('create-folder', targetPath, folderName),
-    createNote: (targetPath, fileName) => ipcRenderer.invoke('create-note', targetPath, fileName)
+    createNote: (targetPath, fileName) => ipcRenderer.invoke('create-note', targetPath, fileName),
+    moveItem: (sourcePath, targetFolderPath) => ipcRenderer.invoke('move-item', sourcePath, targetFolderPath)
 });
