@@ -110,14 +110,50 @@ ipcMain.handle('create-note', async (event, targetPath, fileName) => {
 });
 
 ipcMain.handle('move-item', async (event, sourcePath, targetFolderPath) => {
+    const fs = require('fs');
+    const fsp = fs.promises;
+    const path = require('path');
+
     const itemName = path.basename(sourcePath);
-    const destinationPath = path.join(targetFolderPath, itemName);
+    let destinationPath = path.join(targetFolderPath, itemName);
 
     try {
+        // ✅ If source doesn't exist, abort
+        await fsp.access(sourcePath);
+    } catch {
+        console.warn(`[move-item] Source does not exist: ${sourcePath}`);
+        return { success: false, reason: 'Source does not exist' };
+    }
+
+    try {
+        // 🔁 Handle name collision
+        try {
+            await fsp.access(destinationPath);
+
+            const ext = path.extname(itemName);
+            const base = path.basename(itemName, ext);
+            let i = 1;
+
+            while (true) {
+                const newName = `${base} (${i})${ext}`;
+                const newPath = path.join(targetFolderPath, newName);
+                try {
+                    await fsp.access(newPath);
+                    i++;
+                } catch {
+                    destinationPath = newPath;
+                    break;
+                }
+            }
+        } catch {
+            // destinationPath doesn't exist — all good
+        }
+
         await fsp.rename(sourcePath, destinationPath);
+        return { success: true };
     } catch (err) {
-        console.error('Failed to move item:', err);
-        throw err;
+        console.error('[move-item] Rename failed:', err);
+        return { success: false, reason: err.message };
     }
 });
 

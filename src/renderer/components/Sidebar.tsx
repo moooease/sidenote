@@ -23,7 +23,6 @@ function Sidebar({ onFileSelect }: SidebarProps) {
                     setStructure(structure);
                 } catch (err: any) {
                     console.warn('Saved root folder no longer exists:', saved);
-                    console.warn(err);
                     alert('The previously selected root folder could not be found. Please select a new one.');
                     setRootFolder(null);
                     setStructure([]);
@@ -45,7 +44,6 @@ function Sidebar({ onFileSelect }: SidebarProps) {
 
     const handleItemCreation = async () => {
         if (!rootFolder || !newItemName.trim() || !creatingItem) return;
-
         const finalName = creatingItem.type === 'note' && !newItemName.endsWith('.md') ? `${newItemName.trim()}.md` : newItemName.trim();
 
         try {
@@ -65,8 +63,31 @@ function Sidebar({ onFileSelect }: SidebarProps) {
         }
     };
 
+    const handleRootDrop = async (e: React.DragEvent) => {
+        if (!rootFolder) return;
+
+        const sourcePath = e.dataTransfer.getData('application/node-path');
+        if (!sourcePath || sourcePath === rootFolder || rootFolder.startsWith(sourcePath)) return;
+
+        try {
+            await window.electronAPI.moveItem(sourcePath, rootFolder);
+            const updated = await window.electronAPI.readFolderStructure(rootFolder);
+            setStructure(updated);
+        } catch (err) {
+            console.error('Failed to move item to root:', err);
+        }
+    };
+
     return (
-        <div className='p-4'>
+        <div
+            className={`h-full p-4`}
+            onDragOver={(e) => {
+                if (rootFolder) {
+                    e.preventDefault();
+                }
+            }}
+            onDrop={handleRootDrop}
+        >
             <h2 className='mb-4 text-lg font-semibold'>Explorer</h2>
 
             <button className='mb-4 w-full rounded bg-blue-500 p-2 text-white hover:bg-blue-600' onClick={handleSelectFolder}>
@@ -98,17 +119,21 @@ function Sidebar({ onFileSelect }: SidebarProps) {
 
                     <div className='mb-2 text-sm text-gray-600'>{rootFolder}</div>
 
-                    {structure.length > 0 && (
-                        <FolderTree
-                            structure={structure}
-                            onFileSelect={onFileSelect}
-                            rootPath={rootFolder}
-                            updateStructure={async () => {
-                                const updated = await window.electronAPI.readFolderStructure(rootFolder);
-                                setStructure(updated);
-                            }}
-                        />
-                    )}
+                    <div className=''>
+                        {structure.length > 0 ? (
+                            <FolderTree
+                                structure={structure}
+                                onFileSelect={onFileSelect}
+                                rootPath={rootFolder}
+                                updateStructure={async () => {
+                                    const updated = await window.electronAPI.readFolderStructure(rootFolder);
+                                    setStructure(updated);
+                                }}
+                            />
+                        ) : (
+                            <p className='p-4 text-center text-gray-400'>Drop files or folders here to add them to the root</p>
+                        )}
+                    </div>
                 </>
             )}
 

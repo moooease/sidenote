@@ -30,13 +30,20 @@ function FolderTree({ structure, onFileSelect, rootPath, updateStructure }: Fold
 
 function FolderTreeNode({ node, onFileSelect, rootPath, updateStructure }: FolderTreeNodeProps) {
     const [expanded, setExpanded] = useState(false);
+    const [isDraggingOver, setIsDraggingOver] = useState(false);
 
-    const handleDrop = async (e: React.DragEvent) => {
+    const handleDrop = async (e: React.DragEvent, destinationPath: string) => {
         e.preventDefault();
-        const sourcePath = e.dataTransfer.getData('application/node-path');
-        const destinationPath = node.path;
+        setIsDraggingOver(false);
 
+        const sourcePath = e.dataTransfer.getData('application/node-path');
         if (!sourcePath || sourcePath === destinationPath) return;
+
+        // Prevent moving a folder into one of its own subfolders
+        if (destinationPath.startsWith(sourcePath)) {
+            console.warn('Cannot move a folder into one of its own subfolders.');
+            return;
+        }
 
         try {
             await window.electronAPI.moveItem(sourcePath, destinationPath);
@@ -49,18 +56,33 @@ function FolderTreeNode({ node, onFileSelect, rootPath, updateStructure }: Folde
     if (node.type === 'folder') {
         return (
             <div className='pl-2'>
+                {/* Folder label */}
                 <div
-                    className='cursor-pointer font-bold hover:underline'
+                    className={`cursor-pointer font-bold hover:underline ${isDraggingOver ? 'bg-yellow-100' : ''}`}
                     onClick={() => setExpanded(!expanded)}
                     draggable
                     onDragStart={(e) => e.dataTransfer.setData('application/node-path', node.path)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={handleDrop}
+                    onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDraggingOver(true);
+                    }}
+                    onDragLeave={() => setIsDraggingOver(false)}
+                    onDrop={(e) => handleDrop(e, node.path)}
                 >
                     {expanded ? '📂' : '📁'} {node.name}
                 </div>
+
+                {/* Children (drop here too) */}
                 {expanded && node.children && (
-                    <div className='pl-4'>
+                    <div
+                        className={`pl-4 ${isDraggingOver ? 'bg-yellow-50' : ''}`}
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            setIsDraggingOver(true);
+                        }}
+                        onDragLeave={() => setIsDraggingOver(false)}
+                        onDrop={(e) => handleDrop(e, node.path)}
+                    >
                         {node.children.map((child) => (
                             <div key={child.path}>
                                 <FolderTreeNode node={child} onFileSelect={onFileSelect} rootPath={rootPath} updateStructure={updateStructure} />
