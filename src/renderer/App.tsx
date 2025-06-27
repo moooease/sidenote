@@ -1,7 +1,7 @@
-import debounce from 'lodash/debounce';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
+import Editor from './components/Editor';
 import Sidebar from './components/Sidebar';
 
 function App() {
@@ -14,63 +14,40 @@ function App() {
             const content = await window.electronAPI.readFile(filePath);
             setEditedContent(content);
             setCurrentNoteName(fileName);
-            setCurrentNotePath(filePath); // Save path for autosave
+            setCurrentNotePath(filePath);
         } catch (error) {
             console.error('Failed to read file:', error);
         }
     }
 
-    const debouncedSave = debounce(async (path: string, content: string) => {
-        try {
-            await window.electronAPI.saveFile(path, content);
-            console.log('Autosaved successfully.');
-        } catch (error) {
-            console.error('Autosave failed:', error);
-        }
-    }, 1000);
-
     return (
-        <PanelGroup direction='horizontal' className='h-screen'>
+        <PanelGroup direction='horizontal' className='text-dark dark:text-enamel h-screen font-mono'>
             {/* Sidebar Panel */}
             <Panel defaultSize={20} minSize={10}>
-                <div className='h-full overflow-y-auto border-r border-gray-300 bg-white'>
+                <div className='border-ash bg-enamel dark:border-smoke dark:bg-carbon h-full overflow-y-auto border-r'>
                     <Sidebar onFileSelect={(path, name) => handleOpenFile(path, name)} />
                 </div>
             </Panel>
 
-            <PanelResizeHandle className='w-1 cursor-col-resize bg-gray-300' />
+            <PanelResizeHandle className='bg-ash dark:bg-smoke w-1 cursor-col-resize' />
 
             {/* Editor Panel */}
             <Panel defaultSize={60} minSize={30}>
-                <div className='h-full overflow-y-auto bg-gray-50 p-4'>
-                    {currentNoteName ? (
-                        <>
-                            <h2 className='mb-2 text-lg font-semibold'>{currentNoteName}</h2>
-                            <textarea
-                                className='h-[calc(100vh-150px)] w-full resize-none rounded border bg-white p-2'
-                                value={editedContent}
-                                onChange={(e) => {
-                                    const newContent = e.target.value;
-                                    setEditedContent(newContent);
-                                    if (currentNotePath) {
-                                        debouncedSave(currentNotePath, newContent);
-                                    }
-                                }}
-                                placeholder='Start typing your notes...'
-                            />
-                        </>
-                    ) : (
-                        <div className='flex h-full items-center justify-center text-gray-400'>Select a note to view.</div>
-                    )}
-                </div>
+                {currentNoteName && currentNotePath ? (
+                    <Editor noteName={currentNoteName} notePath={currentNotePath} content={editedContent} setContent={setEditedContent} />
+                ) : (
+                    <div className='bg-enamel text-smoke dark:bg-carbon dark:text-foam flex h-full items-center justify-center'>
+                        Select a note to view.
+                    </div>
+                )}
             </Panel>
 
-            <PanelResizeHandle className='w-1 cursor-col-resize bg-gray-300' />
+            <PanelResizeHandle className='bg-ash dark:bg-smoke w-1 cursor-col-resize' />
 
             {/* Browser / AI Panel */}
             <Panel defaultSize={20} minSize={10}>
-                <div className='h-full overflow-y-auto bg-gray-200 p-4'>
-                    <h2 className='text-lg font-semibold'>AI Research Panel / Browser</h2>
+                <div className='bg-cement text-dark dark:bg-soot dark:text-enamel h-full overflow-y-auto p-4'>
+                    <h2 className='text-lg font-semibold'>Browser / AI Assistant</h2>
                 </div>
             </Panel>
         </PanelGroup>

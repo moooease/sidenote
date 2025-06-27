@@ -88,12 +88,6 @@ function Sidebar({ onFileSelect }: SidebarProps) {
             }}
             onDrop={handleRootDrop}
         >
-            <h2 className='mb-4 text-lg font-semibold'>Explorer</h2>
-
-            <button className='mb-4 w-full rounded bg-blue-500 p-2 text-white hover:bg-blue-600' onClick={handleSelectFolder}>
-                Select Root Folder
-            </button>
-
             {rootFolder && (
                 <>
                     <div className='flex gap-2 border-b p-2'>
@@ -117,9 +111,7 @@ function Sidebar({ onFileSelect }: SidebarProps) {
                         </button>
                     </div>
 
-                    <div className='mb-2 text-sm text-gray-600'>{rootFolder}</div>
-
-                    <div className=''>
+                    <div>
                         {structure.length > 0 ? (
                             <FolderTree
                                 structure={structure}
@@ -158,6 +150,10 @@ function Sidebar({ onFileSelect }: SidebarProps) {
                     }}
                 />
             )}
+
+            <div className='text-smoke dark:text-foam absolute bottom-2 left-4 right-4 cursor-pointer truncate text-xs hover:underline' onClick={handleSelectFolder}>
+                {rootFolder ? rootFolder.split('/').pop() : 'Select Root Folder'}
+            </div>
         </div>
     );
 }
